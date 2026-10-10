@@ -1,39 +1,103 @@
-# Empire: Rise & Ruin v0.3 — Living World
+# EMPIRE: RISE & RUIN — World Intelligence v0.7
 
-Run `npm start` with Node.js 18+ and open http://localhost:3000. Players on separate devices need a publicly reachable server URL. This is a multiplayer prototype, not production hosting.
+**Multiplayer strategic economy + integrated 3-D globe + source-attributed world data.**
 
-## New in v0.3
-- Open-Meteo current weather readings for eight representative city coordinates, refreshed every 15 minutes. Weather severity reduces local income and stability.
-- CoinGecko free public BTC/ETH market quotes, refreshed every 15 minutes. BTC volatility is a **prototype proxy**, not a stock or macroeconomic market index. Market volatility modestly affects sovereign debt interest.
-- Election polling is **not fabricated or automatically scraped**. Optionally set `POLLS_JSON` to a JSON array of sourced, dated country poll-shift records, e.g. `[ {"country":"usa","sourceUrl":"https://example.org/poll","fieldEnd":"2026-10-01","population":"Adults","changePoints":5} ]`. This is only a schema example, not a real poll. An absolute shift of at least 5 points adds a small uncertainty surcharge to debt interest, without implying a winner or advantage for a party.
-- New map overlays: influence, debt risk, weather pressure, polling uncertainty.
-- Each round freezes one shared intelligence snapshot. Feed failures are labeled `stale` and the last snapshot is retained.
+This project extends the currently deployed `ThoughtThinker/RiseandRun` game. It preserves the 2–6 player room-code multiplayer engine (SSE), actions, economic rules, and 8-round match schedule. It adds a full-screen 3-D command center opened directly from the game. Select a country and action in the dashboard to return to that country and action in the game, without leaving the match.
 
-## Important limitations
-No production authentication, persistence, abuse protection, or verified cross-device deployment. Server state is in-memory. Weather readings are representative points, not country-wide assessments. Poll changes are not election predictions. Crypto price volatility is not equivalent to real-world financial-market conditions. The prototype uses live sources only when outbound server networking succeeds; it clearly labels failed feeds as stale.
+## Upload/update an existing Render deployment
 
-## Data sources
-Open-Meteo: https://open-meteo.com/
-CoinGecko: https://www.coingecko.com/
-Check attribution, terms and rate limits before public/commercial deployment.
+Repository: https://github.com/ThoughtThinker/RiseandRun
+Service: https://dashboard.render.com/web/srv-db4qj55ckfvc73ftckb0
 
-## v0.4 upgrade and deployment notes
-- Added Frankfurter's ECB-based USD/EUR, USD/GBP and USD/JPY reference exchange rates and seven-day percentage movements. These are daily reference rates, not intraday tradable quotes or equity prices.
-- The sovereign interest modifier now prefers absolute seven-day FX movement; falls back to BTC volatility only when FX data is unavailable. Thresholds are gameplay rules, not forecasts.
-- A public multiplayer deployment requires a Node.js-capable backend hosting service. Wix static file upload alone cannot run server.js or keep room state synchronized.
-- Before a public launch: add durable persistence, room/session security, origin restrictions, request rate limiting, health checks, reconnect tests, and host the Node server. The current prototype stores rooms in memory and is not production ready.
-- Election polling remains manual and sourced via POLLS_JSON; it is not a live automatic feed.
+**Extract the ZIP and commit its contents to the root of the EXISTING repository** (do **not** upload the ZIP archive itself):
 
-## Hosting preparation (v0.4 deployment package)
-- `render.yaml` is a sample Render Blueprint for a single Node web service. It does **not** deploy itself. Connect a Git repository containing these files to Render to deploy.
-- `Dockerfile` supports a container-capable Node host.
-- `/health` provides an HTTP health endpoint.
-- Open the resulting HTTPS service URL directly for both game UI and multiplayer API. A Wix page can link to it or embed it after testing.
-- **Critical:** This is a demonstration server with in-memory rooms and no production abuse protections. Free-tier sleeping/restarts can erase games. Do not submit as a reliable contest entry before adding persistent room storage and testing with separate devices.
+- Replace `server.js`, `public/index.html` and `public/intel.html`.
+- Add `public/globe.js`, `public/assets/earth-surface.png`, `public/assets/earth-relief.jpg`.
+- Replace `package.json`, `render.yaml` and `Dockerfile` only if you want this package's matching versions. Other files may be kept.
+- Add `extended-test.mjs` to keep a repeatable smoke-test harness.
+- Keep folder structure: the homepage **must** be `public/index.html` and the intelligence page **must** be `public/intel.html`.
 
-## Render deployment checklist
-1. Connect the Render and GitHub apps in ChatGPT, or push these root-level files to a GitHub repository.
-2. In Render, create a Blueprint from the repository and review `render.yaml` (Node web service, free plan).
-3. After deployment, visit `https://YOUR-SERVICE.onrender.com/health` and the root URL.
-4. Test with two devices using separate browser sessions. `npm test` performs a local server smoke test.
-5. Rooms remain in memory; free-tier instance sleeping and restarts can end active games. Production launch requires persistent room storage and security hardening.
+Commit to the `main` branch. If Render does not auto-deploy, open your existing Render web service → **Manual Deploy → Deploy latest commit**. Do **not** create a second Render service. Wait for the deployment to report **Live**.
+
+Then open:
+
+- Main game: https://empire-rise-ruin.onrender.com/
+- Standalone globe: https://empire-rise-ruin.onrender.com/intel.html
+- Diagnostic: https://empire-rise-ruin.onrender.com/health
+- Source statuses: https://empire-rise-ruin.onrender.com/api/intelligence
+
+**Important:** This package has been locally syntax-checked, API smoke-tested, and visually previewed via a browser fallback. External provider connectivity and end-to-end public multiplayer must be re-tested after deployment. Server restarts erase active rooms until persistent multiplayer storage is added; old browser sessions now detect expired rooms and return to the lobby.
+
+## In-game experience
+
+1. Enter or create a multiplayer room. Click the persistent **3-D WORLD INTELLIGENCE** button.
+2. Rotate the WebGL Earth (coastlines/borders from GSHHG) and select overlays for influence, debt, shaded NOAA ETOPO1 relief, weather, shipping routes/chokepoints, earthquakes and polling.
+3. Select a country, view live observations, annual macro context and fictional country debt, then examine a **pre-decision simulator** explaining cost, influence, income and debt changes under current game rules.
+4. Select a proposed action, click **Select this country in the game**, and submit it in the synchronized multiplayer game.
+5. If the device does not support WebGL, the globe falls back to a zoomable 2-D projection with markers and illustrated land shapes; all intelligence panels remain available.
+
+The WebGL globe is a true GPU-rendered 3-D sphere. The **terrain-relief layer is shaded NOAA elevation imagery**, not a height-displaced 3-D terrain mesh. Trade arcs and port locations are illustrative approximate geography, **not live AIS shipping traffic or validated route congestion**.
+
+## Data sources and validity
+
+| Signal | Provider | Timeliness | Game effect |
+| --- | --- | --- | --- |
+| Wind, rain, temperature at 8 sample sites | Open-Meteo | Current/near-time; may be unavailable | Existing capped weather-pressure game rule |
+| Exchange rates EUR, GBP, JPY | Frankfurter / ECB | Daily ECB-based reference | Existing capped market-stress debt modifier |
+| Bitcoin and Ethereum | CoinGecko | Recent API snapshot | Fallback volatility signal, **not a stock-market proxy** |
+| Earthquakes M4.5+ | USGS official GeoJSON | Past day, fetched every 30 min | Informational overlay; no automatic disaster impact |
+| U.S. official severe weather alerts | NOAA / National Weather Service | Active alerts for **Texas only** | Informational only; not a nationwide/global forecast |
+| Country GDP growth | World Bank | Annual and historical | Context only; not game GDP/debt |
+| WTI oil price, S&P 500 index, 10-year Treasury yield | FRED | Latest published observations; may be delayed | Informational, opt-in with free key |
+| Election polling | Administrator-curated sourced entries | Depends on sources and field dates | Existing neutral uncertainty scenario, never outcome prediction |
+
+**Missing/stale feeds are labeled as such.** Source timestamps are distinct from fetch times. The server caches feeds and freezes the game modifier snapshot **for each round**. None of these sources provides real-time trading quotes, precise local impact forecasts, or election predictions.
+
+### Optional: FRED real energy/markets
+
+1. Get a free FRED API key: https://fred.stlouisfed.org/docs/api/api_key.html
+2. In Render → `empire-rise-ruin` → Environment add **`FRED_API_KEY`** with your key as a secret environment variable. Never put it in the public GitHub repo or front-end HTML.
+3. Redeploy (Render will normally restart after env changes). The intelligence panel will show WTI crude oil (DCOILWTICO), S&P 500 (SP500), and 10-year Treasury yield (DGS10) if FRED returns available published observations.
+
+### Optional: sourced polling
+
+In Render → Environment, set `POLLS_JSON` to a JSON array of verified, neutral poll measurements. Example schema (these are **fictional placeholders for explaining the format; do not publish as measured data**):
+
+```json
+[
+  {
+    "country": "usa",
+    "sourceUrl": "https://REPLACE-WITH-REAL-POLL-SOURCE.example",
+    "fieldEnd": "YYYY-MM-DD",
+    "population": "Registered voters / adults / likely voters (as reported)",
+    "changePoints": 0
+  }
+]
+```
+
+Use only real source URLs, accurate end dates, real sampled population and an actual observed change. If omitted, polling is marked **unconfigured**. Do not infer voter preferences from user data; the game does not favor or predict candidates or parties.
+
+## Running and testing locally
+
+```bash
+node --version       # Node >=18
+npm install
+npm test             # existing room smoke test
+node extended-test.mjs
+npm start
+```
+
+Navigate to `http://localhost:3000/`. Internet access is necessary for real provider feeds, but **not** for the frontend, map assets or multiplayer room engine.
+
+## Scope and next steps
+
+- **Implemented:** integrated world-intelligence overlay, WebGL sphere, NOAA terrain-shading view, local coastlines, ports/chokepoints, weather/debt/influence/polling/seismic layers, USGS/NWS/World Bank/FRED optional feeds, country intelligence and pre-decision briefing, source-failure statuses, stale-session reset and tests.
+- **Not yet included:** real elevation-displaced terrain geometry, licensed live AIS vessel traffic, a universal reliable global live polling data provider, automatic global NWS-equivalent warnings for every country, or persistent game rooms across Render restarts.
+- **Recommended for a subsequent release:** choose a licensed AIS source, add DEM mesh tiles with quotas/licensing, build an opt-in polling editorial review workflow, deploy a persistent room-state store (e.g., Render Postgres/Key Value) with reconnectable deadlines, and multi-device load testing.
+
+## Geographic source attribution
+
+- **GSHHG:** Wessel, P. and Smith, W. H. F. (1996), *A Global Self-consistent, Hierarchical, High-resolution Shoreline Database*; GSHHG is distributed under the **LGPL**. Original coastlines and administrative boundaries from the Basemap distribution. https://www.ngdc.noaa.gov/mgg/shorelines/shorelines.html
+- **NOAA ETOPO1:** Amante, C. and Eakins, B.W. (2009), *ETOPO1 1 Arc-Minute Global Relief Model*, DOI `10.7289/V5C8276M`. Relief imagery sourced via the Basemap data distribution, NOAA/NCEI attribution. https://www.ncei.noaa.gov/products/etopo-global-relief-model
+
+These map assets are for a stylized educational game, **not navigation, trading, emergency response or professional weather alerts**.
