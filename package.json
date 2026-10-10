@@ -1,0 +1,12 @@
+{
+  "name": "empire-rise-ruin-living-world",
+  "version": "0.3.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node smoke-test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
